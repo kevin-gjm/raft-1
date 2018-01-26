@@ -22,16 +22,16 @@
 typedef struct
 {
     /* size of array */
-    int size;
+    unsigned long size;
 
     /* the amount of elements in the array */
-    int count;
+    unsigned long count;
 
     /* position of the queue */
-    int front, back;
+    unsigned long front, back;
 
     /* we compact the log, and thus need to increment the Base Log Index */
-    int base;
+    unsigned long base;
 
     raft_entry_t* entries;
 
@@ -75,7 +75,7 @@ static int __ensurecapacity(log_private_t * me)
     return 0;
 }
 
-int log_load_from_snapshot(log_t *me_, int idx, int term)
+int log_load_from_snapshot(log_t *me_, unsigned long idx, unsigned long term)
 {
     log_private_t* me = (log_private_t*)me_;
 
@@ -140,7 +140,7 @@ void log_clear(log_t* me_)
 int log_append_entry(log_t* me_, raft_entry_t* ety)
 {
     log_private_t* me = (log_private_t*)me_;
-    int idx = me->base + me->count + 1;
+    unsigned long idx = me->base + me->count + 1;
     int e;
 
     e = __ensurecapacity(me);
@@ -165,10 +165,10 @@ int log_append_entry(log_t* me_, raft_entry_t* ety)
     return 0;
 }
 
-raft_entry_t* log_get_from_idx(log_t* me_, int idx, int *n_etys)
+raft_entry_t* log_get_from_idx(log_t* me_, unsigned long idx, unsigned long *n_etys)
 {
     log_private_t* me = (log_private_t*)me_;
-    int i;
+    unsigned long i;
 
     assert(0 <= idx - 1);
 
@@ -183,7 +183,7 @@ raft_entry_t* log_get_from_idx(log_t* me_, int idx, int *n_etys)
 
     i = (me->front + idx - me->base) % me->size;
 
-    int logs_till_end_of_log;
+    unsigned long logs_till_end_of_log;
 
     if (i < me->back)
         logs_till_end_of_log = me->back - i;
@@ -194,10 +194,10 @@ raft_entry_t* log_get_from_idx(log_t* me_, int idx, int *n_etys)
     return &me->entries[i];
 }
 
-raft_entry_t* log_get_at_idx(log_t* me_, int idx)
+raft_entry_t* log_get_at_idx(log_t* me_, unsigned long idx)
 {
     log_private_t* me = (log_private_t*)me_;
-    int i;
+    unsigned long i;
 
     if (idx == 0)
         return NULL;
@@ -215,12 +215,12 @@ raft_entry_t* log_get_at_idx(log_t* me_, int idx)
     return &me->entries[i];
 }
 
-int log_count(log_t* me_)
+unsigned long log_count(log_t* me_)
 {
     return ((log_private_t*)me_)->count;
 }
 
-int log_delete(log_t* me_, int idx)
+int log_delete(log_t* me_, unsigned long idx)
 {
     log_private_t* me = (log_private_t*)me_;
 
@@ -232,8 +232,8 @@ int log_delete(log_t* me_, int idx)
 
     for (; idx <= me->base + me->count && me->count;)
     {
-        int idx_tmp = me->base + me->count;
-        int back = mod(me->back - 1, me->size);
+        unsigned long idx_tmp = me->base + me->count;
+        unsigned long back = mod(me->back - 1, me->size);
 
         if (me->cb && me->cb->log_pop)
         {
@@ -252,7 +252,7 @@ int log_delete(log_t* me_, int idx)
 int log_poll(log_t * me_, void** etyp)
 {
     log_private_t* me = (log_private_t*)me_;
-    int idx = me->base + 1;
+    unsigned long idx = me->base + 1;
 
     if (0 == me->count)
         return -1;
@@ -304,13 +304,13 @@ void log_free(log_t * me_)
     free(me);
 }
 
-int log_get_current_idx(log_t* me_)
+unsigned long log_get_current_idx(log_t* me_)
 {
     log_private_t* me = (log_private_t*)me_;
     return log_count(me_) + me->base;
 }
 
-int log_get_base(log_t* me_)
+unsigned long log_get_base(log_t* me_)
 {
     return ((log_private_t*)me_)->base;
 }

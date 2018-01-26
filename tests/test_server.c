@@ -17,7 +17,7 @@
 static int __raft_persist_term(
     raft_server_t* raft,
     void *udata,
-    int term,
+    unsigned long term,
     int vote
     )
 {
@@ -37,7 +37,7 @@ int __raft_applylog(
     raft_server_t* raft,
     void *udata,
     raft_entry_t *ety,
-    int idx
+    unsigned long idx
     )
 {
     return 0;
@@ -281,7 +281,7 @@ static int __raft_logentry_offer(
     raft_server_t* raft,
     void *udata,
     raft_entry_t *ety,
-    int ety_idx
+    unsigned long ety_idx
     )
 {
     CuAssertIntEquals(udata, ety_idx, 1);
@@ -1482,7 +1482,7 @@ static int __raft_log_offer_error(
     raft_server_t* raft,
     void *user_data,
     raft_entry_t *entry,
-    int entry_idx)
+    unsigned long entry_idx)
 {
     __raft_error_t *error = user_data;
 
@@ -1495,7 +1495,7 @@ static int __raft_log_pop_error(
     raft_server_t* raft,
     void *user_data,
     raft_entry_t *entry,
-    int entry_idx)
+    unsigned long entry_idx)
 {
     __raft_error_t *error = user_data;
 

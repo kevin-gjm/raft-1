@@ -22,7 +22,7 @@ typedef struct {
 
     /* the server's best guess of what the current term is
      * starts at zero */
-    int current_term;
+    unsigned long current_term;
 
     /* The candidate the server voted for in its current term,
      * or Nil if it hasn't voted for any.  */
@@ -34,10 +34,10 @@ typedef struct {
     /* Volatile state: */
 
     /* idx of highest log entry known to be committed */
-    int commit_idx;
+    unsigned long commit_idx;
 
     /* idx of highest log entry applied to state machine */
-    int last_applied_idx;
+    unsigned long last_applied_idx;
 
     /* follower/leader/candidate indicator */
     int state;
@@ -64,7 +64,7 @@ typedef struct {
     raft_node_t* node;
 
     /* the log which has a voting cfg change, otherwise -1 */
-    int voting_cfg_change_log_idx;
+    unsigned long voting_cfg_change_log_idx;
 
     /* Our membership with the cluster is confirmed (ie. configuration log was
      * committed) */
@@ -73,8 +73,8 @@ typedef struct {
     int snapshot_in_progress;
 
     /* Last compacted snapshot */
-    int snapshot_last_idx;
-    int snapshot_last_term;
+    unsigned long snapshot_last_idx;
+    unsigned long snapshot_last_term;
 } raft_server_private_t;
 
 int raft_election_start(raft_server_t* me);
@@ -102,7 +102,7 @@ int raft_apply_entry(raft_server_t* me_);
  * @return 0 if unsuccessful */
 int raft_append_entry(raft_server_t* me_, raft_entry_t* c);
 
-void raft_set_last_applied_idx(raft_server_t* me, int idx);
+void raft_set_last_applied_idx(raft_server_t* me, unsigned long idx);
 
 void raft_set_state(raft_server_t* me_, int state);
 
@@ -112,11 +112,11 @@ raft_node_t* raft_node_new(void* udata, int id);
 
 void raft_node_free(raft_node_t* me_);
 
-void raft_node_set_next_idx(raft_node_t* node, int nextIdx);
+void raft_node_set_next_idx(raft_node_t* node, unsigned long nextIdx);
 
-void raft_node_set_match_idx(raft_node_t* node, int matchIdx);
+void raft_node_set_match_idx(raft_node_t* node, unsigned long matchIdx);
 
-int raft_node_get_match_idx(raft_node_t* me_);
+unsigned long raft_node_get_match_idx(raft_node_t* me_);
 
 void raft_node_vote_for_me(raft_node_t* me_, const int vote);
 
@@ -126,11 +126,11 @@ void raft_node_set_has_sufficient_logs(raft_node_t* me_);
 
 int raft_votes_is_majority(const int nnodes, const int nvotes);
 
-void raft_offer_log(raft_server_t* me_, raft_entry_t* ety, const int idx);
+void raft_offer_log(raft_server_t* me_, raft_entry_t* ety, const unsigned long idx);
 
-void raft_pop_log(raft_server_t* me_, raft_entry_t* ety, const int idx);
+void raft_pop_log(raft_server_t* me_, raft_entry_t* ety, const unsigned long idx);
 
-int raft_get_num_snapshottable_logs(raft_server_t* me_);
+unsigned long raft_get_num_snapshottable_logs(raft_server_t* me_);
 
 int raft_node_is_active(raft_node_t* me_);
 

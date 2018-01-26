@@ -67,7 +67,7 @@ raft_server_t* raft_new()
         free(me);
         return NULL;
     }
-    me->voting_cfg_change_log_idx = -1;
+    me->voting_cfg_change_log_idx = RAFT_INVALID_VALUE;
     raft_set_state((raft_server_t*)me, RAFT_STATE_FOLLOWER);
     me->current_leader = NULL;
 
@@ -102,7 +102,7 @@ void raft_clear(raft_server_t* me_)
     me->voted_for = -1;
     me->timeout_elapsed = 0;
     raft_randomize_election_timeout(me_);
-    me->voting_cfg_change_log_idx = -1;
+    me->voting_cfg_change_log_idx = RAFT_INVALID_VALUE;
     raft_set_state((raft_server_t*)me, RAFT_STATE_FOLLOWER);
     me->current_leader = NULL;
     me->commit_idx = 0;
@@ -113,14 +113,14 @@ void raft_clear(raft_server_t* me_)
     log_clear(me->log);
 }
 
-int raft_delete_entry_from_idx(raft_server_t* me_, int idx)
+int raft_delete_entry_from_idx(raft_server_t* me_, unsigned long idx)
 {
     raft_server_private_t* me = (raft_server_private_t*)me_;
 
     assert(raft_get_commit_idx(me_) < idx);
 
-    if (idx <= me->voting_cfg_change_log_idx)
-        me->voting_cfg_change_log_idx = -1;
+    if (me->voting_cfg_change_log_idx!= RAFT_INVALID_VALUE && idx <= me->voting_cfg_change_log_idx)
+        me->voting_cfg_change_log_idx = RAFT_INVALID_VALUE;
 
     return log_delete(me->log, idx);
 }
@@ -244,7 +244,7 @@ int raft_periodic(raft_server_t* me_, int msec_since_last_period)
     return 0;
 }
 
-raft_entry_t* raft_get_entry_from_idx(raft_server_t* me_, int etyidx)
+raft_entry_t* raft_get_entry_from_idx(raft_server_t* me_, unsigned long etyidx)
 {
     raft_server_private_t* me = (raft_server_private_t*)me_;
     return log_get_at_idx(me->log, etyidx);
@@ -252,7 +252,7 @@ raft_entry_t* raft_get_entry_from_idx(raft_server_t* me_, int etyidx)
 
 int raft_voting_change_is_in_progress(raft_server_t* me_)
 {
-    return ((raft_server_private_t*)me_)->voting_cfg_change_log_idx != -1;
+    return ((raft_server_private_t*)me_)->voting_cfg_change_log_idx != RAFT_INVALID_VALUE;
 }
 
 int raft_recv_appendentries_response(raft_server_t* me_,
@@ -262,7 +262,7 @@ int raft_recv_appendentries_response(raft_server_t* me_,
     raft_server_private_t* me = (raft_server_private_t*)me_;
 
     __log(me_, node,
-          "received appendentries response %s ci:%d rci:%d 1stidx:%d",
+          "received appendentries response %s ci:%lu rci:%lu 1stidx:%lu",
           r->success == 1 ? "SUCCESS" : "fail",
           raft_get_current_idx(me_),
           r->current_idx,
@@ -442,7 +442,7 @@ int raft_recv_appendentries(
     /* 3. If an existing entry conflicts with a new one (same index
        but different terms), delete the existing entry and all that
        follow it (§5.3) */
-    int i;
+    unsigned long i;
     for (i = 0; i < ae->n_entries; i++)
     {
         raft_entry_t* ety = &ae->entries[i];
@@ -782,7 +782,7 @@ int raft_apply_entry(raft_server_t* me_)
 
     /* voting cfg change is now complete */
     if (log_idx == me->voting_cfg_change_log_idx)
-        me->voting_cfg_change_log_idx = -1;
+        me->voting_cfg_change_log_idx = RAFT_INVALID_VALUE;
 
     if (!raft_entry_is_cfg_change(ety))
         return 0;
@@ -817,7 +817,7 @@ int raft_apply_entry(raft_server_t* me_)
     return 0;
 }
 
-raft_entry_t* raft_get_entries_from_idx(raft_server_t* me_, int idx, int* n_etys)
+raft_entry_t* raft_get_entries_from_idx(raft_server_t* me_, unsigned long idx, unsigned long* n_etys)
 {
     raft_server_private_t* me = (raft_server_private_t*)me_;
     return log_get_from_idx(me->log, idx, n_etys);
@@ -1047,7 +1047,7 @@ int raft_entry_is_cfg_change(raft_entry_t* ety)
         RAFT_LOGTYPE_REMOVE_NODE == ety->type);
 }
 
-void raft_offer_log(raft_server_t* me_, raft_entry_t* ety, const int idx)
+void raft_offer_log(raft_server_t* me_, raft_entry_t* ety, const unsigned long idx)
 {
     raft_server_private_t* me = (raft_server_private_t*)me_;
 
@@ -1096,7 +1096,7 @@ void raft_offer_log(raft_server_t* me_, raft_entry_t* ety, const int idx)
     }
 }
 
-void raft_pop_log(raft_server_t* me_, raft_entry_t* ety, const int idx)
+void raft_pop_log(raft_server_t* me_, raft_entry_t* ety, const unsigned long idx)
 {
     raft_server_private_t* me = (raft_server_private_t*)me_;
 
@@ -1156,7 +1156,7 @@ int raft_poll_entry(raft_server_t* me_, raft_entry_t **ety)
     return 0;
 }
 
-int raft_get_first_entry_idx(raft_server_t* me_)
+unsigned long raft_get_first_entry_idx(raft_server_t* me_)
 {
     raft_server_private_t* me = (raft_server_private_t*)me_;
 
@@ -1168,7 +1168,7 @@ int raft_get_first_entry_idx(raft_server_t* me_)
     return me->snapshot_last_idx;
 }
 
-int raft_get_num_snapshottable_logs(raft_server_t *me_)
+unsigned long raft_get_num_snapshottable_logs(raft_server_t *me_)
 {
     raft_server_private_t* me = (raft_server_private_t*)me_;
     if (raft_get_log_count(me_) <= 1)
@@ -1254,12 +1254,12 @@ int raft_end_snapshot(raft_server_t *me_)
 
 int raft_begin_load_snapshot(
     raft_server_t *me_,
-    int last_included_term,
-    int last_included_index)
+    unsigned long last_included_term,
+    unsigned long last_included_index)
 {
     raft_server_private_t* me = (raft_server_private_t*)me_;
 
-    if (last_included_index == -1)
+    if (last_included_index == RAFT_INVALID_VALUE)
         return -1;
 
     if (last_included_index == 0 || last_included_index == 0)

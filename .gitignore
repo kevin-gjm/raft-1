@@ -1,5 +1,7 @@
 *.o
 *.gcno
 *~
-libcraft.so
-libcraft.a
+libraft.so
+libraft.a
+CLinkedListQueue
+CLinkedListQueue/*
