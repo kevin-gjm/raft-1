@@ -218,8 +218,10 @@ unsigned long raft_get_last_log_term(raft_server_t* me_)
     unsigned long current_idx = raft_get_current_idx(me_);
     if (0 < current_idx)
     {
-        raft_entry_t* ety = raft_get_entry_from_idx(me_, current_idx);
-        if (ety)
+    	raft_entry_t entry={0};
+        raft_entry_t* ety = &entry;
+		int e = raft_get_entry_from_idx(me_, current_idx,ety);
+        if (e==0)
             return ety->term;
     }
     return 0;
@@ -235,12 +237,12 @@ int raft_snapshot_is_in_progress(raft_server_t *me_)
     return ((raft_server_private_t*)me_)->snapshot_in_progress;
 }
 
-raft_entry_t *raft_get_last_applied_entry(raft_server_t *me_)
+int raft_get_last_applied_entry(raft_server_t *me_,raft_entry_t * ety)
 {
     raft_server_private_t* me = (raft_server_private_t*)me_;
     if (raft_get_last_applied_idx(me_) == 0)
-        return NULL;
-    return log_get_at_idx(me->log, raft_get_last_applied_idx(me_));
+        return -1;
+    return log_get_at_idx(me->log, raft_get_last_applied_idx(me_),ety);
 }
 
 unsigned long raft_get_snapshot_last_idx(raft_server_t *me_)

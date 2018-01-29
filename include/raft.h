@@ -334,6 +334,17 @@ typedef int (
     unsigned long entry_idx
     );
 
+
+typedef int (
+*func_logentry_del_f
+)   (
+    raft_server_t* raft,
+    void *user_data,
+    unsigned long entry_idx
+    );
+
+
+
 typedef struct
 {
     /** Callback for sending request vote messages */
@@ -365,17 +376,20 @@ typedef struct
      * Return RAFT_ERR_SHUTDOWN if you want the server to shutdown. */
     func_logentry_event_f log_offer;
 
+	/** Callback for get an entry from the log */
+    func_logentry_event_f log_get;
+
     /** Callback for removing the oldest entry from the log
      * For safety reasons this callback MUST flush the change to disk.
      * @note If memory was malloc'd in log_offer then this should be the right
      *  time to free the memory. */
-    func_logentry_event_f log_poll;
+    func_logentry_del_f log_poll;
 
     /** Callback for removing the youngest entry from the log
      * For safety reasons this callback MUST flush the change to disk.
      * @note If memory was malloc'd in log_offer then this should be the right
      *  time to free the memory. */
-    func_logentry_event_f log_pop;
+    func_logentry_del_f  log_pop;
 
     /** Callback for determining which node this configuration log entry
      * affects. This call only applies to configuration change log entries.
@@ -642,7 +656,7 @@ void raft_node_set_udata(raft_node_t* me, void* user_data);
 /**
  * @param[in] idx The entry's index
  * @return entry from index */
-raft_entry_t* raft_get_entry_from_idx(raft_server_t* me, unsigned long idx);
+int raft_get_entry_from_idx(raft_server_t* me, unsigned long idx,raft_entry_t* ety);
 
 /**
  * @param[in] node The node's ID
@@ -767,8 +781,6 @@ int raft_entry_is_voting_cfg_change(raft_entry_t* ety);
  * @return 1 if this is a configuration change. */
 int raft_entry_is_cfg_change(raft_entry_t* ety);
 
-raft_entry_t *raft_get_last_applied_entry(raft_server_t *me_);
-
 /** Begin snapshotting.
  *
  * While snapshotting, raft will:
@@ -808,11 +820,13 @@ int raft_snapshot_is_in_progress(raft_server_t *me_);
  * This should be used for compacting logs.
  * @return 0 on success
  **/
-int raft_poll_entry(raft_server_t* me_, raft_entry_t **ety);
+int raft_poll_entry(raft_server_t* me_);
 
 /** Get last applied entry
  **/
-raft_entry_t *raft_get_last_applied_entry(raft_server_t *me_);
+
+int raft_get_last_applied_entry(raft_server_t *me_,raft_entry_t * ety);
+
 
 unsigned long raft_get_first_entry_idx(raft_server_t* me_);
 
